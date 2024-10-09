@@ -1,6 +1,18 @@
--- if true then return end
+if true then return end
 
 local cachev = nil
+
+local tick = 0
+local function addarea(type)
+    hud.add(function (v)
+        tick = $ + 1
+    end, type)
+end
+addarea("game")
+addarea("scores")
+addarea("title")
+-- addarea("titlecard")
+addarea("intermission")
 
 local oldHudAdd = hud.add
 local myHudAdd = function (func, area)
@@ -9,10 +21,10 @@ local myHudAdd = function (func, area)
         if cachev == nil then
             cachev = VWarp(v, {xorigin = 160*FU, yorigin = 100*FU})
         end
-        local xs = sin(leveltime*ANG2*3)/8 + 7*FU/8
-        local ys = cos(leveltime*ANG2*3)/8 + 7*FU/8
-        -- xs = FU
-        -- ys = FU
+        local xs = sin(tick*ANG2*3)/8 + 7*FU/8
+        local ys = cos(tick*ANG2*3)/8 + 7*FU/8
+        xs = FU
+        ys = FU
         local jiggle = ((displayplayer and displayplayer.valid and displayplayer.speed) or 0)/8
         cachev.settings.xscale = xs
         cachev.settings.yscale = ys

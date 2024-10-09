@@ -62,6 +62,59 @@ local font_lineheights = {
     NTFNO = 21
 }
 
+for k, v in pairs({
+    MAGENTA = {177,177,178,178,178,180,180,180,182,182,182,182,184,184,184,185},
+    YELLOW = {82,82,73,73,73,74,74,74,66,66,66,66,67,67,67,68},
+    GREEN = {96,96,98,98,98,100,100,100,103,103,103,103,105,105,105,107},
+    BLUE = {146,146,147,147,147,148,148,148,149,149,149,149,150,150,150,151},
+    RED = {32,32,33,33,33,34,34,34,35,35,35,35,37,37,37,39},
+    GRAY = {8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23},
+    ORANGE = {50,50,52,52,52,54,54,54,56,56,56,56,59,59,59,60},
+    SKY = {129,129,130,130,130,131,131,131,133,133,133,133,135,135,135,136},
+    PURPLE = {160,160,161,161,161,162,162,162,163,163,163,163,164,164,164,165},
+    AQUA = {120,120,121,121,121,122,122,122,123,123,123,123,124,124,124,125},
+    PERIDOT = {73,73,188,188,188,189,189,189,190,190,190,190,191,191,191,94},
+    AZURE = {144,144,145,145,145,146,146,146,170,170,170,170,171,171,171,172},
+    BROWN = {219,219,221,221,221,222,222,222,224,224,224,224,227,227,227,229},
+    ROSY = {200,200,201,201,201,202,202,202,203,203,203,203,204,204,204,205},
+    INVERT = {15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0}
+}) do
+    print("SKINCOLOR_" .. k .. "MAP")
+    if not pcall(function () return _G["SKINCOLOR_" .. k .. "MAP"] end) then
+        print("defining")
+        skincolors[freeslot("SKINCOLOR_" .. k .. "MAP")] = {
+            name = "V_" .. k .. "MAP",
+            accessible = false,
+            ramp = v,
+            invcolor = SKINCOLOR_NONE,
+            invshade = 5,
+            chatcolor = _G["V_" .. k .. "MAP"]
+        }
+    end
+end
+
+local color_flag2skincolor = {
+    [0]            = SKINCOLOR_NONE,
+    [V_MAGENTAMAP] = SKINCOLOR_MAGENTAMAP,
+    [V_YELLOWMAP]  = SKINCOLOR_YELLOWMAP,
+    [V_GREENMAP]   = SKINCOLOR_GREENMAP,
+    [V_BLUEMAP]    = SKINCOLOR_BLUEMAP,
+    [V_REDMAP]     = SKINCOLOR_REDMAP,
+    [V_GRAYMAP]    = SKINCOLOR_GRAYMAP,
+    [V_ORANGEMAP]  = SKINCOLOR_ORANGEMAP,
+    [V_SKYMAP]     = SKINCOLOR_SKYMAP,
+    [V_PURPLEMAP]  = SKINCOLOR_PURPLEMAP,
+    [V_AQUAMAP]    = SKINCOLOR_AQUAMAP,
+    [V_PERIDOTMAP] = SKINCOLOR_PERIDOTMAP,
+    [V_AZUREMAP]   = SKINCOLOR_AZUREMAP,
+    [V_BROWNMAP]   = SKINCOLOR_BROWNMAP,
+    [V_ROSYMAP]    = SKINCOLOR_ROSYMAP,
+    [V_INVERTMAP]  = SKINCOLOR_INVERTMAP -- TODO actual invert skincolor
+}
+local function colorflag2skincolor(flags)
+    return color_flag2skincolor[(flags or 0) & V_CHARCOLORMASK]
+end
+
 local function splitLines(str)
     local lines = {}
     for line in (str.."\n"):gmatch("(.-)\n") do
@@ -91,6 +144,7 @@ end
 
 --[[@param truev videolib]]
 --[[@param settings WarpSettings]]
+--[[@return videolib]]
 rawset(_G, "VWarp", function (truev, settings)
     if not settings then settings = {} end
     settings = {
@@ -139,18 +193,35 @@ rawset(_G, "VWarp", function (truev, settings)
         )
     end
     modv.drawNum = function (x, y, n, f)
-
-        -- drawNum is always nonfixed, make it fixed
-        local wx, wy = posWarp(x*FU, y*FU, settings)
-
-        -- TODO drawNum is not just drawString(tostring(num))
-        -- TODO but also make this better
-        truev.drawNum(
-            wx/FU, wy/FU,
-            n, f
+        vwarpcustomhud.CustomNum(
+            -- v, x, y, num, fontName, padding, flags, align, scale, color
+            modv,
+            -- x, y, num
+            x*FU, y*FU, n,
+            -- fontName, padding, flags, align
+            "STTNUM", nil, f, "right",
+            -- scale, color
+            FU, colorflag2skincolor(f)
         )
     end
-    def(modv, truev, "drawPaddedNum")
+    modv.drawPaddedNum = function (x, y, n, d, f)
+        if type(d) != "number" then
+            d = 2
+        elseif d < 1 then
+            error("nonpositive digits value " .. d .. "given to VWarp().drawPaddedNum. FYI the standard function freezes the game if you do that.")
+        end
+        local strnum = tostring(abs(n))
+        vwarpcustomhud.CustomNum(
+            -- v, x, y, num, fontName, padding, flags, align, scale, color
+            modv,
+            -- x, y, num
+            x*FU, y*FU, strnum:sub(max(0, #strnum - d + 1)),
+            -- fontName, padding, flags, align
+            "STTNUM", d, f, "right",
+            -- scale, color
+            FU, colorflag2skincolor(f)
+        )
+    end
     modv.drawFill = function (x, y, w, h, c)
         -- this is funky to make sure no gaps appear
         -- TODO maybe make this draw a texture? would be hard to do for a drop-in library lua. you probably shouldn't be using this anyway.
@@ -169,34 +240,29 @@ rawset(_G, "VWarp", function (truev, settings)
         )
     end
     modv.drawString = function (x, y, t, f, a)
-        -- TODO custom drawString to allow scaling
-        -- TODO also convert draw type to fixed
         if align_nonfixed2fixed[a or "left"] then
             a = align_nonfixed2fixed[a or "left"]
             x = $ * FU
             y = $ * FU
         end
-        -- local wx, wy = posWarp(x, y, settings)
-        -- truev.drawString(wx, wy, t, f, a)
 
         -- since CustomHUD uses normal drawing functions we just need to translate the request and pass in modv
         -- align, scale, font name
         local metadata = align_propertymap[a]
 
-        if (f & V_ALLOWLOWERCASE) then
+        if f and (f & V_ALLOWLOWERCASE) then
             f = $ & ~V_ALLOWLOWERCASE
         else
-            t = t:upper()
+            t = tostring(t):upper()
         end
 
         local lineheight = font_lineheights[metadata[3]]
-        if f & V_RETURN8 then
+        if f and (f & V_RETURN8) then
             lineheight = 8;
         end
 
         -- print(x .. "/" .. y .. "/" .. x/FU .. "f/" .. y/FU .. "f/" .. t .. "/" .. f)
 
-        -- TODO not passing in modv for debug
         for _, line in pairs(splitLines(tostring(t))) do
             vwarpcustomhud.CustomFontString(
                 -- v, x, y, str, fontname, flags, align, scale, color
@@ -206,14 +272,105 @@ rawset(_G, "VWarp", function (truev, settings)
                 -- fontname, flags, align
                 metadata[3], f or 0, metadata[1],
                 -- scale, color
-                metadata[2], 0 -- TODO actually figure out the color
+                metadata[2], colorflag2skincolor(f)
             )
             y = $ + FixedMul(lineheight*FU, metadata[2])
         end
     end
-    def(modv, truev, "drawNameTag")
-    def(modv, truev, "drawScaledNameTag")
-    def(modv, truev, "drawLevelTitle")
+    modv.drawNameTag = function (x, y, t, f, bc, oc)
+        local align = "left"
+
+        if f and (f & V_CENTERNAMETAG) then
+            align = "center"
+        end
+        f = (f or 0) & ~V_FLIP
+
+        t = tostring(t):upper()
+
+        for _, line in pairs(splitLines(tostring(t))) do
+            vwarpcustomhud.CustomFontString(
+                -- v, x, y, str, fontname, flags, align, scale, color
+                modv,
+                -- x, y, str
+                x*FU, y*FU, line,
+                -- fontname, flags, align
+                "NTFNO", f or 0, align,
+                -- scale, color
+                FU, oc
+            )
+            vwarpcustomhud.CustomFontString(
+                -- v, x, y, str, fontname, flags, align, scale, color
+                modv,
+                -- x, y, str
+                x*FU, y*FU, line,
+                -- fontname, flags, align
+                "NTFNT", f or 0, align,
+                -- scale, color
+                FU, bc
+            )
+            y = $ + font_lineheights.NTFNT*FU
+        end
+    end
+    modv.drawScaledNameTag = function (x, y, t, f, s, bc, oc)
+        local align = "left"
+
+        if f and (f & V_CENTERNAMETAG) then
+            align = "center"
+        end
+        f = (f or 0) & ~V_FLIP
+
+        t = tostring(t):upper()
+
+        for _, line in pairs(splitLines(tostring(t))) do
+            vwarpcustomhud.CustomFontString(
+                -- v, x, y, str, fontname, flags, align, scale, color
+                modv,
+                -- x, y, str
+                x, y, line,
+                -- fontname, flags, align
+                "NTFNO", f or 0, align,
+                -- scale, color
+                s, oc
+            )
+            vwarpcustomhud.CustomFontString(
+                -- v, x, y, str, fontname, flags, align, scale, color
+                modv,
+                -- x, y, str
+                x, y, line,
+                -- fontname, flags, align
+                "NTFNT", f or 0, align,
+                -- scale, color
+                s, bc
+            )
+            y = $ + FixedMul(font_lineheights.NTFNT*FU, s)
+        end
+    end
+    modv.drawLevelTitle = function (x, y, t, f)
+        -- level title is always lowercaseable, remove the flag to not flip the letters
+        f = ($ or 0) & ~V_ALLOWLOWERCASE
+
+        local lineheight = font_lineheights.LTFNT
+        if f and (f & V_RETURN8) then
+            lineheight = 8;
+        end
+
+        x = $*FU
+        y = $*FU
+
+        for _, line in pairs(splitLines(tostring(t))) do
+            vwarpcustomhud.CustomFontString(
+                -- v, x, y, str, fontname, flags, align, scale, color
+                modv,
+                -- x, y, str
+                x, y, line,
+                -- fontname, flags, align
+                "LTFNT", f or 0, "left",
+                -- scale, color
+                FU, colorflag2skincolor(f)
+            )
+            y = $ + lineheight*FU
+        end
+    end
     def(modv, truev, "fadeScreen")
     -- misc
     def(modv, truev, "stringWidth")
@@ -238,6 +395,13 @@ rawset(_G, "VWarp", function (truev, settings)
 
     return modv
 end)
+
+
+
+
+
+
+
 
 
 -- #region CustomHUD
@@ -324,7 +488,9 @@ local function NumberPatchName(v, fontName, charByte)
 	local charNumber = charByte - 48;
 	if (charNumber >= 0 and charNumber <= 9) then
 		return fontName .. string.format("%d", charNumber);
-	end
+    else -- EDIT: support for minus
+        return fonts[fontName].minus
+    end
 	return "";
 end
 
@@ -362,6 +528,10 @@ function vwarpcustomhud.CustomFontStringWidth(v, str, fontName, scale)
 		return;
 	end
 
+    if fontName == "NTFNO" then
+        fontName = "NTFNT"
+    end
+
 	local font = vwarpcustomhud.GetFont(fontName);
 	if (font == nil) then
 		warn("Invalid font given in customhud.CustomFontStringWidth");
@@ -394,6 +564,7 @@ function vwarpcustomhud.CustomFontStringWidth(v, str, fontName, scale)
 
 	for i = 1,str:len() do
 		local charByte = str:byte(i,i);
+        if charByte >= 0x80 and charByte <= 0x8f then continue end
 		local patch = vwarpcustomhud.GetFontPatch(v, font, charByte);
 
 		if (patch and patch.valid) then
@@ -452,7 +623,9 @@ function vwarpcustomhud.CustomFontChar(v, x, y, charByte, fontName, flags, scale
 
 	local wc = nil;
 	if (color) then
-		wc = v.getColormap(TC_DEFAULT, color);
+        -- EDITED: rainbow instead of default sometimes
+        local tc = iif(font == "STCFN" or font == "TNYFN", TC_RAINBOW, TC_DEFAULT)
+		wc = v.getColormap(tc, color);
 	end
 
 	local patch = vwarpcustomhud.GetFontPatch(v, font, charByte);
@@ -463,6 +636,10 @@ function vwarpcustomhud.CustomFontChar(v, x, y, charByte, fontName, flags, scale
 			v.draw(x, y, patch, flags, wc);
 		end
 	end
+
+    if fontName == "NTFNO" then -- EDITED: hack to make nametag text draw correctly
+        patch = vwarpcustomhud.GetFontPatch(v, vwarpcustomhud.GetFont("NTFNT"), charByte);
+    end
 
 	local nextx = x;
 	if (patch and patch.valid) then
@@ -520,7 +697,9 @@ function vwarpcustomhud.CustomFontString(v, x, y, str, fontName, flags, align, s
 
 	local wc = nil;
 	if (color) then
-		wc = v.getColormap(TC_DEFAULT, color);
+        -- EDITED: rainbow instead of default sometimes
+        local tc = iif(font == "STCFN" or font == "TNYFN", TC_RAINBOW, TC_DEFAULT)
+		wc = v.getColormap(tc, color);
 	end
 
 	local nextx = x;
@@ -533,6 +712,10 @@ function vwarpcustomhud.CustomFontString(v, x, y, str, fontName, flags, align, s
 
 	for i = 1,str:len() do
 		local nextByte = str:byte(i,i);
+        if nextByte >= 0x80 and nextByte <= 0x8f then
+            color = colorflag2skincolor((nextByte-0x80)*V_MAGENTAMAP)
+            continue
+        end
 		nextx = vwarpcustomhud.CustomFontChar(v, nextx, y, nextByte, fontName, flags, scale, color);
 	end
 end
@@ -588,5 +771,9 @@ vwarpcustomhud.SetupFont("STCFN", 0,  4)
 vwarpcustomhud.SetupFont("TNYFN", 0,  2)
 vwarpcustomhud.SetupFont("CRFNT", 0, 16)
 vwarpcustomhud.SetupFont("LTFNT", 0, 16)
-vwarpcustomhud.SetupFont("NTFNT", 2,  4)
-vwarpcustomhud.SetupFont("NTFNO", 0,  4)
+vwarpcustomhud.SetupFont("NTFNT", 2,  4) 
+vwarpcustomhud.SetupFont("NTFNO", 2,  4)-- EDITED: default kerning is 0 but we need to do a kack elsewhere so match NTFNT
+
+--numbers
+vwarpcustomhud.SetupNumberFont("STTNUM", 0, 0, 8)
+fonts["STTNUM"].minus = "STTMINUS" -- this is NOT normal functionality fyi
