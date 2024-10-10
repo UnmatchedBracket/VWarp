@@ -1,4 +1,5 @@
 if true then return end
+local VWarp = dofile("VWarp")
 
 local globalv = nil
 local globalmv = nil

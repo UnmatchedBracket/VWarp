@@ -205,7 +205,7 @@ end
 --[[@param truev videolib]]
 --[[@param settings WarpSettings]]
 --[[@return videolib]]
-rawset(_G, "VWarp", function (truev, settings)
+local function VWarp (truev, settings)
     if not settings then settings = {} end
     settings = {
         xscale  = settings.xscale  or FU,
@@ -243,9 +243,7 @@ rawset(_G, "VWarp", function (truev, settings)
         local wxs, wys, wf = scaleWarp(xs, ys, f, settings)
 
         truev.drawStretched(
-            wx, wy,
-            wxs,
-            wys,
+            wx, wy, wxs, wys,
             p, wf, c
         )
     end
@@ -257,9 +255,7 @@ rawset(_G, "VWarp", function (truev, settings)
         local wxs, wys, wf = scaleWarp(xs, ys, f, settings)
 
         truev.drawCropped(
-            wxs, wys,
-            FixedMul(xs, settings.xscale),
-            FixedMul(ys, settings.yscale),
+            wx, wy, wxs, wys,
             p, wf, c, sx, sy, w, h
         )
     end
@@ -465,7 +461,7 @@ rawset(_G, "VWarp", function (truev, settings)
     def(modv, truev, "userTransFlag")
 
     return modv
-end)
+end
 
 
 
@@ -847,4 +843,7 @@ vwarpcustomhud.SetupFont("NTFNO", 2,  4)-- EDITED: default kerning is 0 but we n
 
 --numbers
 vwarpcustomhud.SetupNumberFont("STTNUM", 0, 0, 8)
-fonts["STTNUM"].minus = "STTMINUS" -- this is NOT normal functionality fyi
+fonts["STTNUM"].minus = "STTMINUS" -- this is NOT normal functionality of CustomHUD fyi
+
+
+return VWarp
