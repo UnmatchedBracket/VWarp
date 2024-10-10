@@ -77,11 +77,12 @@ for k, v in pairs({
     AZURE = {144,144,145,145,145,146,146,146,170,170,170,170,171,171,171,172},
     BROWN = {219,219,221,221,221,222,222,222,224,224,224,224,227,227,227,229},
     ROSY = {200,200,201,201,201,202,202,202,203,203,203,203,204,204,204,205},
-    INVERT = {15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0}
+    -- INVERT = {15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0}
+    INVERT = {31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16}
 }) do
-    print("SKINCOLOR_" .. k .. "MAP")
+    -- print("SKINCOLOR_" .. k .. "MAP")
     if not pcall(function () return _G["SKINCOLOR_" .. k .. "MAP"] end) then
-        print("defining")
+        -- print("defining")
         skincolors[freeslot("SKINCOLOR_" .. k .. "MAP")] = {
             name = "V_" .. k .. "MAP",
             accessible = false,
@@ -109,7 +110,7 @@ local color_flag2skincolor = {
     [V_AZUREMAP]   = SKINCOLOR_AZUREMAP,
     [V_BROWNMAP]   = SKINCOLOR_BROWNMAP,
     [V_ROSYMAP]    = SKINCOLOR_ROSYMAP,
-    [V_INVERTMAP]  = SKINCOLOR_INVERTMAP -- TODO actual invert skincolor
+    [V_INVERTMAP]  = SKINCOLOR_INVERTMAP
 }
 local function colorflag2skincolor(flags)
     return color_flag2skincolor[(flags or 0) & V_CHARCOLORMASK]
@@ -694,7 +695,7 @@ function vwarpcustomhud.CustomFontChar(v, x, y, charByte, fontName, flags, scale
 	local wc = nil;
 	if (color) then
         -- EDITED: rainbow instead of default sometimes
-        local tc = iif(font == "STCFN" or font == "TNYFN", TC_RAINBOW, TC_DEFAULT)
+        local tc = iif(fontName == "STCFN" or fontName == "TNYFN" or fontName == "LTFNT", TC_RAINBOW, TC_DEFAULT)
 		wc = v.getColormap(tc, color);
 	end
 
@@ -768,7 +769,7 @@ function vwarpcustomhud.CustomFontString(v, x, y, str, fontName, flags, align, s
 	local wc = nil;
 	if (color) then
         -- EDITED: rainbow instead of default sometimes
-        local tc = iif(font == "STCFN" or font == "TNYFN", TC_RAINBOW, TC_DEFAULT)
+        local tc = iif(font == "STCFN" or font == "TNYFN" or font == "LTFNT", TC_RAINBOW, TC_DEFAULT)
 		wc = v.getColormap(tc, color);
 	end
 
