@@ -1,7 +1,7 @@
 # VWarp
 VWarp is an SRB2 Lua library to allow for easy warping of HUD elements (scaling, moving).
 
-Trailer
+Trailer  
 [![Trailer](https://img.youtube.com/vi/iLFRJOmbY20/0.jpg)](https://youtu.be/iLFRJOmbY20)
 
 ## Usage
