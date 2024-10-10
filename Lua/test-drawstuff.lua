@@ -1,19 +1,18 @@
--- if true then return end
+if true then return end
 
 local globalv = nil
 local globalmv = nil
-local function dual(f)
-    f(globalv)
-    f(globalmv)
+local function dual(v, mv, f)
+    f(v)
+    f(mv)
 end
 
 --[[@param v videolib]]
 hud.add(function (v)
     -- local n = sin(leveltime*ANG2)/6000
     -- local p = 1
-    local mv = VWarp(v, {xorigin = 160*FU, xscale = FU + sin(leveltime*ANG2)/10, yoffset = 20*FU})
-    globalv = v
-    globalmv = mv
+    -- local mv = VWarp(v, {xorigin = 160*FU, xscale = FU + sin(leveltime*ANG2)/10, yoffset = 20*FU})
+    local mv = VWarp(v, {xorigin = 160*FU, xscale = sin(leveltime*ANG2*3), yoffset = 20*FU})
 
     --  v.drawString(100, 0, 12, 0)
     --  v.drawString(100, 10, 12, V_REDMAP)
@@ -25,7 +24,7 @@ hud.add(function (v)
     -- mv.drawString(160, 30, 12, V_REDMAP|V_ORANGEMAP)
 
     --[[@param d videolib]]
-    dual(function (d)
+    dual(v, mv, function (d)
         d.drawNameTag(
             160, 20, "Hello",
             V_CENTERNAMETAG, SKINCOLOR_RED, SKINCOLOR_BLUE

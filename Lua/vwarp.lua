@@ -134,13 +134,72 @@ local function posWarp(x, y, settings)
     )
 end
 
+
+local function scaleWarp(xs, ys, f, settings)
+    local wxs = FixedMul(xs, settings.xscale)
+    local wys = FixedMul(ys, settings.yscale)
+    if wxs < 0 then
+        wxs = -$
+        f = $ ^^ V_FLIP
+    end
+    -- uhh we cant y-flip
+    return
+        wxs,
+        wys,
+        f
+end
+
+---@param v videolib
+---@param flags? number
+---@param settings WarpSettings
+---@return number|string newflags
+local function transmult(v, flags, settings)
+    if settings.transp <= 0 then return flags or 0 end
+    -- this value is from 0=invisible to 10=opaque
+    local ftrans = ((flags or 0) & V_ALPHAMASK) / V_10TRANS
+    if ftrans > 12 then
+        --??? too high
+        ftrans = 10
+    elseif ftrans >= 10 then
+        --hudtrans, 10=half, 11=normal, 12=double
+        -- this value is also from 0=invisible to 10=opaque
+        local hudtrans = 10-(v.localTransFlag()/V_10TRANS)
+        if ftrans == 10 then
+            hudtrans = $/2
+        elseif ftrans == 12 then
+            hudtrans = min(10, $*2)
+        end
+        ftrans = hudtrans
+    else
+        ftrans = 10-ftrans
+    end
+
+    -- add 5 to round in a normal way
+    local transp = max(0, min(settings.transp, 10))
+    local mult = ((ftrans * (10-transp))+5)/10
+    if mult == 0 then
+        return "invisible"
+    end
+
+    return ((flags or 0) & ~V_ALPHAMASK) | ((10-mult)*V_10TRANS)
+end
+
+-- for x=0,9 do
+--     local s = ""
+--     for y=0,10 do
+--         s = $ .. transmult(nil, x*V_10TRANS, {transp = y}) .. " "
+--     end
+--     print(s)
+-- end
+
 ---@class WarpSettings
----@field xscale fixed_t? Scale factor for x (default: FU)
----@field yscale fixed_t? Scale factor for y (default: FU)
+---@field xscale fixed_t? Scale factor for x; this one can be negative (default: FU)
+---@field yscale fixed_t? Scale factor for y; this one must be positive or 0 (default: FU)
 ---@field xorigin fixed_t? Scale origin for x (default: 0, center of screen: 160FU)
 ---@field yorigin fixed_t? Scale origin for y (default: 0, center of screen: 100FU)
 ---@field xoffset fixed_t? Offset for x (default: 0)
 ---@field yoffset fixed_t? Offset for y (default: 0)
+---@field transp number? Transparency, from 0 (normal) to 10 (invisible) (default: 0)
 
 --[[@param truev videolib]]
 --[[@param settings WarpSettings]]
@@ -148,12 +207,13 @@ end
 rawset(_G, "VWarp", function (truev, settings)
     if not settings then settings = {} end
     settings = {
-        xscale = settings.xscale or FU,
-        yscale = settings.yscale or FU,
+        xscale  = settings.xscale  or FU,
+        yscale  = settings.yscale  or FU,
         xorigin = settings.xorigin or 0,
         yorigin = settings.yorigin or 0,
         xoffset = settings.xoffset or 0,--160*FU - FixedMul(160*FU, xs),
         yoffset = settings.yoffset or 0,--100*FU - FixedMul(100*FU, ys)+cos(leveltime*ANG2*3)*10
+        transp  = settings.transp  or 0
     }
 
     --[[@type videolib]]
@@ -175,21 +235,31 @@ rawset(_G, "VWarp", function (truev, settings)
         modv.drawStretched(x, y, s, s, p, f, c)
     end
     modv.drawStretched = function (x, y, xs, ys, p, f, c)
+        f = transmult(truev, f, settings)
+        if f == "invisible" then return end
+
         local wx, wy = posWarp(x, y, settings)
+        local wxs, wys, wf = scaleWarp(xs, ys, f, settings)
+
         truev.drawStretched(
             wx, wy,
-            FixedMul(xs, settings.xscale),
-            FixedMul(ys, settings.yscale),
-            p, f, c
+            wxs,
+            wys,
+            p, wf, c
         )
     end
     modv.drawCropped = function (x, y, xs, ys, p, f, c, sx, sy, w, h)
+        f = transmult(truev, f, settings)
+        if f == "invisible" then return end
+
         local wx, wy = posWarp(x, y, settings)
+        local wxs, wys, wf = scaleWarp(xs, ys, f, settings)
+
         truev.drawCropped(
-            wx, wy,
+            wxs, wys,
             FixedMul(xs, settings.xscale),
             FixedMul(ys, settings.yscale),
-            p, f, c, sx, sy, w, h
+            p, wf, c, sx, sy, w, h
         )
     end
     modv.drawNum = function (x, y, n, f)
