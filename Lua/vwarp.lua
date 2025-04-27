@@ -5,6 +5,11 @@
 --    moving/scaling HUD     --
 --     elements easier.      --
 -------------------------------
+--      Available under      --
+--      the MIT license,     --
+--    or "Open Assets" as    --
+--   defined on the SRB2MB.  --
+-------------------------------
 
 -- NOTE: VWarp relies on CustomHUD for strings,
  -- and therefore does not support these flags:
@@ -61,60 +66,6 @@ local font_lineheights = {
     NTFNT = 21,
     NTFNO = 21
 }
-
-for k, v in pairs({
-    MAGENTA = {177,177,178,178,178,180,180,180,182,182,182,182,184,184,184,185},
-    YELLOW = {82,82,73,73,73,74,74,74,66,66,66,66,67,67,67,68},
-    GREEN = {96,96,98,98,98,100,100,100,103,103,103,103,105,105,105,107},
-    BLUE = {146,146,147,147,147,148,148,148,149,149,149,149,150,150,150,151},
-    RED = {32,32,33,33,33,34,34,34,35,35,35,35,37,37,37,39},
-    GRAY = {8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23},
-    ORANGE = {50,50,52,52,52,54,54,54,56,56,56,56,59,59,59,60},
-    SKY = {129,129,130,130,130,131,131,131,133,133,133,133,135,135,135,136},
-    PURPLE = {160,160,161,161,161,162,162,162,163,163,163,163,164,164,164,165},
-    AQUA = {120,120,121,121,121,122,122,122,123,123,123,123,124,124,124,125},
-    PERIDOT = {73,73,188,188,188,189,189,189,190,190,190,190,191,191,191,94},
-    AZURE = {144,144,145,145,145,146,146,146,170,170,170,170,171,171,171,172},
-    BROWN = {219,219,221,221,221,222,222,222,224,224,224,224,227,227,227,229},
-    ROSY = {200,200,201,201,201,202,202,202,203,203,203,203,204,204,204,205},
-    -- INVERT = {15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0}
-    INVERT = {31,30,29,28,27,26,25,24,23,22,21,20,19,18,17,16}
-}) do
-    -- print("SKINCOLOR_" .. k .. "MAP")
-    if not pcall(function () return _G["SKINCOLOR_" .. k .. "MAP"] end) then
-        -- print("defining")
-        skincolors[freeslot("SKINCOLOR_" .. k .. "MAP")] = {
-            name = "V_" .. k .. "MAP",
-            accessible = false,
-            ramp = v,
-            invcolor = SKINCOLOR_NONE,
-            invshade = 5,
-            chatcolor = _G["V_" .. k .. "MAP"]
-        }
-    end
-end
-
-local color_flag2skincolor = {
-    [0]            = SKINCOLOR_NONE,
-    [V_MAGENTAMAP] = SKINCOLOR_MAGENTAMAP,
-    [V_YELLOWMAP]  = SKINCOLOR_YELLOWMAP,
-    [V_GREENMAP]   = SKINCOLOR_GREENMAP,
-    [V_BLUEMAP]    = SKINCOLOR_BLUEMAP,
-    [V_REDMAP]     = SKINCOLOR_REDMAP,
-    [V_GRAYMAP]    = SKINCOLOR_GRAYMAP,
-    [V_ORANGEMAP]  = SKINCOLOR_ORANGEMAP,
-    [V_SKYMAP]     = SKINCOLOR_SKYMAP,
-    [V_PURPLEMAP]  = SKINCOLOR_PURPLEMAP,
-    [V_AQUAMAP]    = SKINCOLOR_AQUAMAP,
-    [V_PERIDOTMAP] = SKINCOLOR_PERIDOTMAP,
-    [V_AZUREMAP]   = SKINCOLOR_AZUREMAP,
-    [V_BROWNMAP]   = SKINCOLOR_BROWNMAP,
-    [V_ROSYMAP]    = SKINCOLOR_ROSYMAP,
-    [V_INVERTMAP]  = SKINCOLOR_INVERTMAP
-}
-local function colorflag2skincolor(flags)
-    return color_flag2skincolor[(flags or 0) & V_CHARCOLORMASK]
-end
 
 local function splitLines(str)
     local lines = {}
@@ -268,7 +219,7 @@ local function VWarp (truev, settings)
             -- fontName, padding, flags, align
             "STTNUM", nil, f, "right",
             -- scale, color
-            FU, colorflag2skincolor(f)
+            FU, truev.getStringColormap(f or 0)
         )
     end
     modv.drawPaddedNum = function (x, y, n, d, f)
@@ -286,7 +237,7 @@ local function VWarp (truev, settings)
             -- fontName, padding, flags, align
             "STTNUM", d, f, "right",
             -- scale, color
-            FU, colorflag2skincolor(f)
+            FU, truev.getStringColormap(f or 0)
         )
     end
     modv.drawFill = function (x, y, w, h, c)
@@ -317,7 +268,11 @@ local function VWarp (truev, settings)
         -- align, scale, font name
         local metadata = align_propertymap[a]
 
-        if f and (f & V_ALLOWLOWERCASE) then
+        if f == nil then
+            f = V_ALLOWLOWERCASE
+        end
+
+        if (f & V_ALLOWLOWERCASE) then
             f = $ & ~V_ALLOWLOWERCASE
         else
             t = tostring(t):upper()
@@ -339,7 +294,7 @@ local function VWarp (truev, settings)
                 -- fontname, flags, align
                 metadata[3], f or 0, metadata[1],
                 -- scale, color
-                metadata[2], colorflag2skincolor(f)
+                metadata[2], truev.getStringColormap(f or 0)
             )
             y = $ + FixedMul(lineheight*FU, metadata[2])
         end
@@ -433,7 +388,7 @@ local function VWarp (truev, settings)
                 -- fontname, flags, align
                 "LTFNT", f or 0, "left",
                 -- scale, color
-                FU, colorflag2skincolor(f)
+                FU, truev.getStringColormap(f or 0)
             )
             y = $ + lineheight*FU
         end
@@ -688,12 +643,12 @@ function vwarpcustomhud.CustomFontChar(v, x, y, charByte, fontName, flags, scale
 		mono = $1 * scale;
 	end
 
-	local wc = nil;
-	if (color) then
-        -- EDITED: rainbow instead of default sometimes
-        local tc = iif(fontName == "STCFN" or fontName == "TNYFN" or fontName == "LTFNT", TC_RAINBOW, TC_DEFAULT)
-		wc = v.getColormap(tc, color);
-	end
+	local wc = color;
+	-- if (color) then
+    --     -- EDITED: rainbow instead of default sometimes
+    --     local tc = iif(fontName == "STCFN" or fontName == "TNYFN" or fontName == "LTFNT", TC_RAINBOW, TC_DEFAULT)
+	-- 	wc = v.getColormap(tc, color);
+	-- end
 
 	local patch = vwarpcustomhud.GetFontPatch(v, font, charByte);
 	if (patch and patch.valid) then
@@ -727,7 +682,7 @@ function vwarpcustomhud.CustomFontChar(v, x, y, charByte, fontName, flags, scale
 end
 
 function vwarpcustomhud.CustomFontString(v, x, y, str, fontName, flags, align, scale, color)
-	if not (type(str) == "string") then
+    if not (type(str) == "string") then
 		warn("No string given in customhud.CustomFontString");
 		return;
 	end
@@ -780,10 +735,10 @@ function vwarpcustomhud.CustomFontString(v, x, y, str, fontName, flags, align, s
 	for i = 1,str:len() do
 		local nextByte = str:byte(i,i);
         if nextByte >= 0x80 and nextByte <= 0x8f then
-            color = colorflag2skincolor((nextByte-0x80)*V_MAGENTAMAP)
+            color = v.getStringColormap((nextByte-0x80)*V_MAGENTAMAP)
             continue
         end
-		nextx = vwarpcustomhud.CustomFontChar(v, nextx, y, nextByte, fontName, flags, scale, color);
+		nextx = vwarpcustomhud.CustomFontChar(v, nextx, y, nextByte, fontName, flags, scale, wc);
 	end
 end
 
